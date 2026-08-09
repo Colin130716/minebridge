@@ -30,3 +30,4 @@
 
 - 2026-08-09: 项目脚手架（Gradle/Loom/Kotlin 构建、fabric.mod.json、LGPL-3.0 LICENSE、最小入口）
 - 2026-08-09: TomlParser 轻量 TOML 解析器（注释/转义/嵌套表）+ JUnit 测试
+- 2026-08-09: 配置模型（Matterbridge/Bridge/Formatting/Events）+ ConfigManager（首次自动生成默认配置）
