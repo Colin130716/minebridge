@@ -34,3 +34,4 @@
 - 2026-08-09: Matterbridge API 消息模型（OutgoingMessage/IncomingMessage，Gson 序列化）
 - 2026-08-09: FormatCodeStripper 去 § 格式码 + 测试
 - 2026-08-09: MessageFormatter（灰平台前缀+金用户名+白正文）+ 测试
+- 2026-08-09: MessageDeduplicator（50 条环形去重防回环）+ 测试
