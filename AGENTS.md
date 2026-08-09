@@ -32,3 +32,4 @@
 - 2026-08-09: TomlParser 轻量 TOML 解析器（注释/转义/嵌套表）+ JUnit 测试
 - 2026-08-09: 配置模型（Matterbridge/Bridge/Formatting/Events）+ ConfigManager（首次自动生成默认配置）
 - 2026-08-09: Matterbridge API 消息模型（OutgoingMessage/IncomingMessage，Gson 序列化）
+- 2026-08-09: FormatCodeStripper 去 § 格式码 + 测试
