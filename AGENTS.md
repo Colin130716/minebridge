@@ -39,3 +39,4 @@
 - 2026-08-09: StreamListener（长连接+指数退避重连）+ MessagePoller（轮询回退）+ 测试
 - 2026-08-09: 事件转发器（聊天 msg_create / join / leave）+ MessageBridge（队列+tick分发+stream/轮询回退）+ 挂载入口
 - 2026-08-09: Mod Menu + Cloth Config 可选配置界面（软集成）+ ConfigManager.save() 写回
+- 2026-08-09: README + CI + 构建部署到 mods 目录（minebridge-1.0.0+1.21.11.jar）
