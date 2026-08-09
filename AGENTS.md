@@ -36,3 +36,4 @@
 - 2026-08-09: MessageFormatter（灰平台前缀+金用户名+白正文）+ 测试
 - 2026-08-09: MessageDeduplicator（50 条环形去重防回环）+ 测试
 - 2026-08-09: MatterbridgeClient（JDK HttpClient：POST message / GET messages / health / stream 长连接）+ 本地 HttpServer 集成测试
+- 2026-08-09: StreamListener（长连接+指数退避重连）+ MessagePoller（轮询回退）+ 测试
