@@ -37,3 +37,4 @@
 - 2026-08-09: MessageDeduplicator（50 条环形去重防回环）+ 测试
 - 2026-08-09: MatterbridgeClient（JDK HttpClient：POST message / GET messages / health / stream 长连接）+ 本地 HttpServer 集成测试
 - 2026-08-09: StreamListener（长连接+指数退避重连）+ MessagePoller（轮询回退）+ 测试
+- 2026-08-09: 事件转发器（聊天 msg_create / join / leave）+ MessageBridge（队列+tick分发+stream/轮询回退）+ 挂载入口
