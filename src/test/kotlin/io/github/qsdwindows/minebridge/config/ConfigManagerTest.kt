@@ -97,4 +97,31 @@ class ConfigManagerTest {
         assertEquals(path, written)
         assertTrue(Files.exists(path))
     }
+
+    @Test
+    fun `save writes config back and reloads it`() {
+        val path = tempDir.resolve("minebridge.toml")
+        val manager = ConfigManager(path)
+        val original = manager.load()
+
+        val modified = original.copy(
+            matterbridge = original.matterbridge.copy(
+                baseUrl = "http://example.com:9999/api",
+                token = "new-token",
+            ),
+            bridge = original.bridge.copy(streamEnabled = false),
+            formatting = original.formatting.copy(showPlatformPrefix = false),
+            events = original.events.copy(forwardJoin = false),
+        )
+
+        manager.save(modified)
+        val reloaded = ConfigManager(path).load()
+
+        assertEquals("http://example.com:9999/api", reloaded.matterbridge.baseUrl)
+        assertEquals("new-token", reloaded.matterbridge.token)
+        assertEquals(false, reloaded.bridge.streamEnabled)
+        assertEquals(false, reloaded.formatting.showPlatformPrefix)
+        assertEquals(false, reloaded.events.forwardJoin)
+        assertEquals(original.events.forwardChat, reloaded.events.forwardChat)
+    }
 }

@@ -53,6 +53,37 @@ class ConfigManager(private val configPath: Path) {
         return configPath
     }
 
+    fun save(config: MinebridgeConfig): Path {
+        Files.createDirectories(configPath.parent)
+        Files.writeString(configPath, toToml(config))
+        return configPath
+    }
+
+    private fun toToml(config: MinebridgeConfig): String = buildString {
+        appendLine("# Minebridge 配置文件（由配置界面保存）")
+        appendLine()
+        appendLine("[matterbridge]")
+        appendLine("baseUrl = \"${config.matterbridge.baseUrl}\"")
+        appendLine("token = \"${config.matterbridge.token}\"")
+        appendLine("gateway = \"${config.matterbridge.gateway}\"")
+        appendLine()
+        appendLine("[bridge]")
+        appendLine("enabled = ${config.bridge.enabled}")
+        appendLine("streamEnabled = ${config.bridge.streamEnabled}")
+        appendLine("pollIntervalSeconds = ${config.bridge.pollIntervalSeconds}")
+        appendLine("reconnectDelaySeconds = ${config.bridge.reconnectDelaySeconds}")
+        appendLine("streamFailoverThreshold = ${config.bridge.streamFailoverThreshold}")
+        appendLine()
+        appendLine("[formatting]")
+        appendLine("showPlatformPrefix = ${config.formatting.showPlatformPrefix}")
+        appendLine("prefixFormat = \"${config.formatting.prefixFormat}\"")
+        appendLine()
+        appendLine("[events]")
+        appendLine("forwardChat = ${config.events.forwardChat}")
+        appendLine("forwardJoin = ${config.events.forwardJoin}")
+        appendLine("forwardLeave = ${config.events.forwardLeave}")
+    }
+
     private fun Map<String, Any?>.str(key: String): String? = this[key] as? String
     private fun Map<String, Any?>.bool(key: String, default: Boolean): Boolean = (this[key] as? Boolean) ?: default
     private fun Map<String, Any?>.long(key: String, default: Long): Long = (this[key] as? Long) ?: default
