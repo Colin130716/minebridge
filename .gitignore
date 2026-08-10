@@ -17,3 +17,6 @@ Thumbs.db
 
 # Mod output
 *.jar
+
+# Runtime logs
+logs/

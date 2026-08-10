@@ -9,8 +9,10 @@ import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicReference
 
 /**
- * GET /api/stream 长连接监听器。独立守护线程循环读取，
- * 断线后按指数退避自动重连（base = reconnectDelaySeconds，倍增上限 5 次）。
+ * GET /api/stream 长连接监听器。
+ *
+ * [api.openStream] 为阻塞语义：调用线程内同步读取，EOF 正常返回、连接异常抛异常。
+ * runLoop 据此用 try/catch 天然驱动重连，断线后按指数退避（base = reconnectDelaySeconds，倍增上限 5 次）。
  *
  * [onOpened] 每次成功建立连接时回调；[onClosed] 每次连接中断/EOF 时回调（参数为异常或 null）。
  */
@@ -25,9 +27,12 @@ class StreamListener(
     private val running = AtomicBoolean(true)
     private val currentStream = AtomicReference<AutoCloseable?>(null)
 
+    private var loopThread: Thread? = null
+
     fun start() {
         val thread = Thread(::runLoop, "minebridge-stream")
         thread.isDaemon = true
+        loopThread = thread
         thread.start()
     }
 
@@ -35,19 +40,19 @@ class StreamListener(
         var attempt = 0
         while (running.get()) {
             try {
-                val handle = api.openStream(onMessage)
-                currentStream.set(handle)
-                attempt = 0
-                onOpened()
-                // 阻塞等待：openStream 内部线程在连接关闭后返回
-                try {
-                    Thread.sleep(Long.MAX_VALUE)
-                } catch (_: InterruptedException) {
-                    // 被 close() 中断，退出
-                }
+                api.openStream(
+                    onMessage = onMessage,
+                    onOpened = { handle ->
+                        currentStream.set(handle)
+                        attempt = 0
+                        onOpened()
+                    },
+                )
+                // EOF：正常断开
                 currentStream.set(null)
                 if (running.get()) onClosed(null)
             } catch (e: Exception) {
+                // 连接失败 / HTTP 非 200 / 读取异常：走重连
                 currentStream.set(null)
                 if (running.get()) onClosed(e)
             }
@@ -69,5 +74,6 @@ class StreamListener(
     override fun close() {
         running.set(false)
         currentStream.get()?.close()
+        loopThread?.interrupt()
     }
 }

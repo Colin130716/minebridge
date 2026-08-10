@@ -18,8 +18,15 @@ interface MatterbridgeApi {
     fun healthCheck(): Boolean
 
     /**
-     * GET /api/stream 长连接。内部起守护线程读取并回调 [onMessage]。
-     * 返回 AutoCloseable，close() 中断读取并关闭底层连接。
+     * GET /api/stream 长连接，**阻塞语义**：在调用线程内同步读取直到 EOF/异常。
+     *
+     * - 连接建立成功后先回调 [onOpened]（参数为可关闭句柄，用于从外部中断读取）
+     * - 逐行解析 JSON 并回调 [onMessage]
+     * - 连接失败或 HTTP 非 200 时抛 [java.io.IOException]
+     * - EOF 时正常返回
      */
-    fun openStream(onMessage: (IncomingMessage) -> Unit): AutoCloseable
+    fun openStream(
+        onMessage: (IncomingMessage) -> Unit,
+        onOpened: (AutoCloseable) -> Unit,
+    )
 }

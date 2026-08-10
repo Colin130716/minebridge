@@ -13,6 +13,8 @@ import io.github.qsdwindows.minebridge.matterbridge.MessagePoller
 import io.github.qsdwindows.minebridge.matterbridge.OutgoingMessage
 import io.github.qsdwindows.minebridge.matterbridge.StreamListener
 import net.minecraft.server.MinecraftServer
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.atomic.AtomicBoolean
 
@@ -25,6 +27,8 @@ class MessageBridge(
     private val config: MinebridgeConfig,
     private val api: MatterbridgeApi,
 ) : AutoCloseable {
+
+    private val LOGGER: Logger = LoggerFactory.getLogger(MessageBridge::class.java)
 
     private val incomingQueue: ConcurrentLinkedQueue<IncomingMessage> = ConcurrentLinkedQueue()
     private val deduplicator = MessageDeduplicator()
@@ -55,23 +59,38 @@ class MessageBridge(
         incomingQueue.add(msg)
     }
 
-    /** server tick 分发：过滤自身回声 + 去重 + 格式化 + 广播。 */
+    /** server tick 分发：过滤自身回声 + event 过滤 + 去重 + 格式化 + 广播。 */
     fun onServerTick() {
         while (true) {
             val msg = incomingQueue.poll() ?: break
-            // 过滤自己发出的消息（account=minecraft）
-            if (msg.account == "minecraft") continue
+            // 只处理指定事件，忽略附件/系统等其他事件
+            if (msg.event !in HANDLED_EVENTS) continue
+            // 过滤自己发出的消息回声（protocol=api 或 account 为 minecraft/api.*）
+            if (isOwnEcho(msg)) continue
             // 防回环去重
-            if (deduplicator.isDuplicate(msg.userid, msg.text ?: "")) continue
+            if (deduplicator.isDuplicate(msg.gateway, msg.username, msg.text ?: "")) continue
             val component = MessageFormatter.format(msg, config.formatting)
             server.playerList.players.forEach { it.sendSystemMessage(component) }
         }
     }
 
-    /** 发送侧：记录去重摘要后异步发送。 */
+    /** 发送侧：记录去重摘要后异步发送，失败时记录 warn 日志。 */
     fun send(message: OutgoingMessage) {
-        deduplicator.mark(message.userid, message.text)
-        api.sendMessage(message)
+        deduplicator.mark(message.gateway, message.username, message.text)
+        api.sendMessage(message).thenAccept { ok ->
+            if (!ok) {
+                LOGGER.warn("[Minebridge] Failed to send message to gateway '{}'", message.gateway)
+            }
+        }
+    }
+
+    private fun isOwnEcho(msg: IncomingMessage): Boolean =
+        msg.protocol == "api" ||
+            msg.account?.startsWith("minecraft") == true ||
+            msg.account?.startsWith("api.") == true
+
+    companion object {
+        private val HANDLED_EVENTS = setOf("msg_create", "join", "leave")
     }
 
     private fun onStreamOpened() {

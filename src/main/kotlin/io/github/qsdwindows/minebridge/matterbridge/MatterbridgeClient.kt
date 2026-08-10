@@ -6,6 +6,7 @@ package io.github.qsdwindows.minebridge.matterbridge
 
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
+import java.io.IOException
 import java.io.InputStream
 import java.net.URI
 import java.net.http.HttpClient
@@ -17,13 +18,15 @@ import java.util.concurrent.atomic.AtomicBoolean
 
 /** 基于 JDK HttpClient 的 Matterbridge API 实现。 */
 class MatterbridgeClient(
-    private val baseUrl: String,
+    baseUrl: String,
     private val token: String,
     private val httpClient: HttpClient = HttpClient.newBuilder()
         .connectTimeout(Duration.ofSeconds(10))
         .build(),
     private val gson: Gson = Gson(),
 ) : MatterbridgeApi {
+
+    private val baseUrl: String = baseUrl.trimEnd('/')
 
     override fun sendMessage(message: OutgoingMessage): CompletableFuture<Boolean> {
         val request = newRequest("/message")
@@ -52,35 +55,35 @@ class MatterbridgeClient(
         }
     }
 
-    override fun openStream(onMessage: (IncomingMessage) -> Unit): AutoCloseable {
+    override fun openStream(
+        onMessage: (IncomingMessage) -> Unit,
+        onOpened: (AutoCloseable) -> Unit,
+    ) {
         val request = newRequest("/stream").GET().build()
         val response = httpClient.send(request, HttpResponse.BodyHandlers.ofInputStream())
+        if (response.statusCode() != 200) {
+            response.body().close()
+            throw IOException("stream HTTP ${response.statusCode()}")
+        }
         val input: InputStream = response.body()
         val closed = AtomicBoolean(false)
-
-        val thread = Thread({
-            try {
-                val reader = input.bufferedReader()
-                while (!closed.get()) {
-                    val line = reader.readLine() ?: break
-                    if (line.isBlank()) continue
-                    val msg = gson.fromJson(line, IncomingMessage::class.java) ?: continue
-                    onMessage(msg)
-                }
-            } catch (e: Exception) {
-                // 连接中断/关闭：正常路径，静默
-            } finally {
-                try {
-                    input.close()
-                } catch (_: Exception) {
-                }
-            }
-        }, "minebridge-stream-reader")
-        thread.isDaemon = true
-        thread.start()
-
-        return AutoCloseable {
+        val handle = AutoCloseable {
             closed.set(true)
+            try {
+                input.close()
+            } catch (_: Exception) {
+            }
+        }
+        onOpened(handle)
+        try {
+            val reader = input.bufferedReader()
+            while (!closed.get()) {
+                val line = reader.readLine() ?: break
+                if (line.isBlank()) continue
+                val msg = gson.fromJson(line, IncomingMessage::class.java) ?: continue
+                onMessage(msg)
+            }
+        } finally {
             try {
                 input.close()
             } catch (_: Exception) {
@@ -93,5 +96,6 @@ class MatterbridgeClient(
             .uri(URI.create(baseUrl + path))
             .header("Authorization", "Bearer $token")
             .header("Accept", "application/json, application/x-json-stream")
+            .header("User-Agent", "minebridge/1.0.0")
             .timeout(Duration.ofSeconds(30))
 }

@@ -103,13 +103,26 @@ class MatterbridgeClientTest {
         val received = CopyOnWriteArrayList<IncomingMessage>()
         val client = client()
 
-        val handle = client.openStream { received.add(it) }
-        Thread.sleep(500)
-        handle.close()
+        // openStream 是阻塞语义：服务端写两行后关闭连接，读取结束后返回
+        client.openStream(
+            onMessage = { received.add(it) },
+            onOpened = { },
+        )
 
         assertTrue(received.isNotEmpty())
         assertEquals("s1", received.first().text)
         assertEquals("irc", received.first().protocol)
+    }
+
+    @Test
+    fun `openStream throws IOException on non-200`() {
+        val bad = MatterbridgeClient(baseUrl = "http://127.0.0.1:${server.address.port}/wrong", token = "t")
+        try {
+            bad.openStream(onMessage = {}, onOpened = {})
+            throw AssertionError("expected IOException for non-200 stream")
+        } catch (e: java.io.IOException) {
+            // expected
+        }
     }
 
     @Test

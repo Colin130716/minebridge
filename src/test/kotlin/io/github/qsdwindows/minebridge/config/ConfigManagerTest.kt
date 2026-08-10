@@ -99,6 +99,15 @@ class ConfigManagerTest {
     }
 
     @Test
+    fun `corrupted config falls back to defaults`() {
+        val path = tempDir.resolve("minebridge.toml")
+        Files.writeString(path, "[matterbridge\nbaseUrl = \"unclosed")
+        val config = ConfigManager(path).load()
+        assertEquals("http://localhost:4242/api", config.matterbridge.baseUrl)
+        assertTrue(config.bridge.enabled)
+    }
+
+    @Test
     fun `save writes config back and reloads it`() {
         val path = tempDir.resolve("minebridge.toml")
         val manager = ConfigManager(path)
@@ -123,5 +132,28 @@ class ConfigManagerTest {
         assertEquals(false, reloaded.formatting.showPlatformPrefix)
         assertEquals(false, reloaded.events.forwardJoin)
         assertEquals(original.events.forwardChat, reloaded.events.forwardChat)
+    }
+
+    @Test
+    fun `save and reload round-trips special characters`() {
+        val path = tempDir.resolve("minebridge.toml")
+        val manager = ConfigManager(path)
+        val original = manager.load()
+
+        val modified = original.copy(
+            matterbridge = original.matterbridge.copy(
+                baseUrl = "http://x/api",
+                token = "p#ss\\word\"with\nspecial",
+                gateway = "gw#1",
+            ),
+            formatting = original.formatting.copy(prefixFormat = "[%platform%]#"),
+        )
+
+        manager.save(modified)
+        val reloaded = ConfigManager(path).load()
+
+        assertEquals("p#ss\\word\"with\nspecial", reloaded.matterbridge.token)
+        assertEquals("gw#1", reloaded.matterbridge.gateway)
+        assertEquals("[%platform%]#", reloaded.formatting.prefixFormat)
     }
 }

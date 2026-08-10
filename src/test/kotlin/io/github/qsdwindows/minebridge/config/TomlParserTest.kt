@@ -54,4 +54,16 @@ class TomlParserTest {
     fun `empty input returns map with empty root table`() {
         assertTrue(TomlParser.parse("").isEmpty())
     }
+
+    @Test
+    fun `hash inside string value is preserved`() {
+        val toml = "token = \"abc#def\"  # real comment"
+        assertEquals("abc#def", TomlParser.parse(toml)[""]?.get("token"))
+    }
+
+    @Test
+    fun `hash inside string with escaped quote preserved`() {
+        val toml = "token = \"a\\\"b#c\" # comment"
+        assertEquals("a\"b#c", TomlParser.parse(toml)[""]?.get("token"))
+    }
 }

@@ -20,7 +20,7 @@ object TomlParser {
         tables[currentTable] = LinkedHashMap()
 
         text.lineSequence().forEach { rawLine ->
-            val line = rawLine.substringBefore('#').trim()
+            val line = stripComment(rawLine).trim()
             if (line.isEmpty()) return@forEach
 
             if (line.startsWith("[") && line.endsWith("]")) {
@@ -38,6 +38,25 @@ object TomlParser {
         // 剔除没有任何键的空表（含空输入时自动创建的空根表）
         tables.entries.removeIf { it.value.isEmpty() }
         return tables
+    }
+
+    /** 仅移除字符串外的 `#` 注释（字符串内的 `#` 按 TOML 规范保留）。 */
+    private fun stripComment(line: String): String {
+        var inString = false
+        var i = 0
+        while (i < line.length) {
+            val c = line[i]
+            when {
+                c == '"' && !inString -> inString = true
+                c == '"' && inString -> {
+                    val prev = line.getOrNull(i - 1)
+                    if (prev != '\\') inString = false
+                }
+                c == '#' && !inString -> return line.substring(0, i)
+            }
+            i++
+        }
+        return line
     }
 
     private fun parseValue(raw: String): Any? = when {

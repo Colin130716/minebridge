@@ -15,7 +15,11 @@ import net.fabricmc.loader.api.FabricLoader
  */
 class MinebridgeModMenu : ModMenuApi {
     override fun getModConfigScreenFactory(): ConfigScreenFactory<*> = ConfigScreenFactory { parent ->
-        val path = FabricLoader.getInstance().configDir.resolve("minebridge.toml")
+        val loader = FabricLoader.getInstance()
+        if (!loader.isModLoaded("cloth-config")) {
+            return@ConfigScreenFactory null
+        }
+        val path = loader.configDir.resolve("minebridge.toml")
         val manager = ConfigManager(path)
         val config = manager.load()
         ClothConfigScreen.create(parent, config) { newConfig ->
