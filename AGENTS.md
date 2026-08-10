@@ -41,3 +41,4 @@
 - 2026-08-09: Mod Menu + Cloth Config 可选配置界面（软集成）+ ConfigManager.save() 写回
 - 2026-08-09: README + CI + 构建部署到 mods 目录（minebridge-1.0.0+1.21.11.jar）
 - 2026-08-09: Review 修复：StreamListener 重连重构（openStream 改阻塞语义+状态码检查）、回声/事件过滤、去重 key 改 gateway|username|text、TOML 字符串内 # 修复+转义、配置损坏回退、GUI requireRestart（48 测试全绿）
+- 2026-08-09: Review 二轮修复：MessagePoller 已处理消息环形缓冲（防轮询重复投递）+ MessagePollerTest（52 测试全绿）
