@@ -47,3 +47,4 @@
 - 2026-08-15: 新增 /minebridge 命令（status/reload/send 子命令，op 权限，用 1.21.11 Permissions API）+ 配置热重载（ConfigWatcher 轮询 mtime + 重建 bridge，转发器持 AtomicReference 配置）+ ConfigWatcherTest（61 测试全绿）
 - 2026-08-15: 入站 join/leave 事件移除处理：Matterbridge 原生不向 api 转发 IRC/XMPP 的 join/leave，保留出站 PlayerJoinLeaveForwarder（MC 玩家进出 → 外部平台），入站仅处理 msg_create 与空 event 聊天消息
 - 2026-08-15: 新增 /minebridge display [on|off]（所有人无权限要求，默认 on；每玩家经 DisplayPrefs 控制是否显示入站转发消息；status/reload/send 权限下沉到子命令）+ DisplayPrefs + DisplayPrefsTest（64 测试全绿）
+- 2026-08-15: Gradle 弃用修复：processResources/jar 在执行期访问 project（build.gradle.kts:66/78）→ 配置期缓存 mod_version/archives_base_name 值，移除多余 import；Build Scan 报告弃用警告消除

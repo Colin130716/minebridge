@@ -1,6 +1,3 @@
-import org.gradle.jvm.tasks.Jar
-import org.gradle.language.jvm.tasks.ProcessResources
-
 plugins {
     id("fabric-loom") version "1.17.17"
     id("org.jetbrains.kotlin.jvm") version "2.4.10"
@@ -61,9 +58,11 @@ tasks.test {
 }
 
 tasks.processResources {
-    inputs.property("version", project.version)
+    // 配置期缓存 project 值，避免在执行期访问 project（Gradle 10 将报错）
+    val versionString = providers.gradleProperty("mod_version").get()
+    inputs.property("version", versionString)
     filesMatching("fabric.mod.json") {
-        expand("version" to project.version)
+        expand("version" to versionString)
     }
 }
 
@@ -74,7 +73,9 @@ java {
 }
 
 tasks.jar {
+    // 配置期缓存 project 值，避免在执行期访问 project（Gradle 10 将报错）
+    val archivesName = providers.gradleProperty("archives_base_name").get()
     from("LICENSE") {
-        rename { fileName: String -> "${fileName}_${project.base.archivesName.get()}" }
+        rename { fileName: String -> "${fileName}_$archivesName" }
     }
 }
