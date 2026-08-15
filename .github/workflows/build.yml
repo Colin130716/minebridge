@@ -16,7 +16,7 @@ jobs:
           java-version: 21
       - uses: gradle/actions/setup-gradle@v5
       - run: ./gradlew build
-      - uses: actions/upload-artifact@v5
+      - uses: actions/upload-artifact@v7
         with:
           name: minebridge-jar
           path: build/libs/minebridge-1.0.0+1.21.11.jar
