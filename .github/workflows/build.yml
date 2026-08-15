@@ -19,4 +19,4 @@ jobs:
       - uses: actions/upload-artifact@v7
         with:
           name: minebridge-jar
-          path: build/libs/minebridge-1.0.0+1.21.11.jar
+          path: build/libs/minebridge-1.0.1+1.21.11.jar

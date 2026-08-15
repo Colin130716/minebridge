@@ -86,21 +86,44 @@ class MessageBridge(
         }
     }
 
+    /** 运行状态快照（供 /minebridge status 命令展示与测试）。 */
+    fun status(): BridgeStatus = BridgeStatus(
+        enabled = config.bridge.enabled,
+        streamEnabled = config.bridge.streamEnabled,
+        receiveMode = if (pollerActive.get()) "poller" else "stream",
+        streamFailures = streamFailures,
+        onboardingQueueSize = incomingQueue.size,
+        gateway = config.matterbridge.gateway,
+        baseUrl = config.matterbridge.baseUrl,
+    )
+
+    /** 运行状态数据。 */
+    data class BridgeStatus(
+        val enabled: Boolean,
+        val streamEnabled: Boolean,
+        val receiveMode: String,
+        val streamFailures: Int,
+        val onboardingQueueSize: Int,
+        val gateway: String,
+        val baseUrl: String,
+    )
+
     private fun isOwnEcho(msg: IncomingMessage): Boolean =
         msg.protocol == "api" ||
             msg.account?.startsWith("minecraft") == true ||
             msg.account?.startsWith("api.") == true
 
     companion object {
-        private val CHAT_EVENTS = setOf("msg_create", "join", "leave")
+        private val CHAT_EVENTS = setOf("msg_create")
 
         /**
          * 入站消息是否应被处理（可被当作聊天/事件展示）。
          *
-         * - `msg_create` / `join` / `leave` 显式处理；
+         * - `msg_create` 显式处理；
          * - **event 为空/NULL 且文本非空** 视为普通聊天消息（Matterbridge 从 xmpp/irc
          *   等外部桥转发来的消息 event 通常为空，仅 text/username 有效）；
-         * - 其他事件（如附件 attach_create、系统 api_connected 等）忽略。
+         * - 其他事件（join/leave/附件/系统等）忽略——Matterbridge 原生不向 api 转发
+         *   IRC/XMPP 的 join/leave，入站 join/leave 无意义。
          */
         internal fun isHandledEvent(msg: IncomingMessage): Boolean {
             val event = msg.event

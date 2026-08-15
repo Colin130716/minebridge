@@ -8,15 +8,17 @@ import io.github.qsdwindows.minebridge.config.MinebridgeConfig
 import io.github.qsdwindows.minebridge.matterbridge.OutgoingMessage
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents
 import net.minecraft.server.network.ServerGamePacketListenerImpl
+import java.util.concurrent.atomic.AtomicReference
 
-/** 将玩家加入/离开事件转发到 Matterbridge（event=join/leave，username 固定 Minecraft）。 */
+/** 将玩家加入/离开事件转发到 Matterbridge（event=join/leave，username 固定 Minecraft）。config 用引用以便热重载。 */
 class PlayerJoinLeaveForwarder(
-    private val config: MinebridgeConfig,
+    private val configRef: AtomicReference<MinebridgeConfig>,
     private val send: (OutgoingMessage) -> Unit,
 ) {
     fun register() {
         ServerPlayConnectionEvents.JOIN.register(
             ServerPlayConnectionEvents.Join { handler: ServerGamePacketListenerImpl, _, _ ->
+                val config = configRef.get()
                 if (!config.events.forwardJoin) return@Join
                 val name = handler.player.gameProfile.name
                 send(
@@ -35,6 +37,7 @@ class PlayerJoinLeaveForwarder(
         )
         ServerPlayConnectionEvents.DISCONNECT.register(
             ServerPlayConnectionEvents.Disconnect { handler: ServerGamePacketListenerImpl, _ ->
+                val config = configRef.get()
                 if (!config.events.forwardLeave) return@Disconnect
                 val name = handler.player.gameProfile.name
                 send(

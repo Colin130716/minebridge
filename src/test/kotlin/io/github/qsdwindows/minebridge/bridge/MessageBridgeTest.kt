@@ -21,9 +21,10 @@ class MessageBridgeTest {
     }
 
     @Test
-    fun `join and leave events are handled`() {
-        assertTrue(MessageBridge.isHandledEvent(IncomingMessage(event = "join", text = "x joined")))
-        assertTrue(MessageBridge.isHandledEvent(IncomingMessage(event = "leave", text = "x left")))
+    fun `join and leave events from external bridges are ignored`() {
+        // Matterbridge 原生不向 api 转发 IRC/XMPP 的 join/leave，入站 join/leave 无意义 → 忽略
+        assertFalse(MessageBridge.isHandledEvent(IncomingMessage(event = "join", text = "x joined")))
+        assertFalse(MessageBridge.isHandledEvent(IncomingMessage(event = "leave", text = "x left")))
     }
 
     @Test

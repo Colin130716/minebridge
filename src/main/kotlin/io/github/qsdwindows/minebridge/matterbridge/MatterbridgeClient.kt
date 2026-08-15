@@ -96,6 +96,6 @@ class MatterbridgeClient(
             .uri(URI.create(baseUrl + path))
             .header("Authorization", "Bearer $token")
             .header("Accept", "application/json, application/x-json-stream")
-            .header("User-Agent", "minebridge/1.0.0")
+            .header("User-Agent", "minebridge/1.0.1")
             .timeout(Duration.ofSeconds(30))
 }
