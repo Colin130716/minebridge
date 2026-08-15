@@ -42,3 +42,5 @@
 - 2026-08-09: README + CI + 构建部署到 mods 目录（minebridge-1.0.0+1.21.11.jar）
 - 2026-08-09: Review 修复：StreamListener 重连重构（openStream 改阻塞语义+状态码检查）、回声/事件过滤、去重 key 改 gateway|username|text、TOML 字符串内 # 修复+转义、配置损坏回退、GUI requireRestart（48 测试全绿）
 - 2026-08-09: Review 二轮修复：MessagePoller 已处理消息环形缓冲（防轮询重复投递）+ MessagePollerTest（52 测试全绿）
+- 2026-08-15: 修复入站事件过滤：Matterbridge 从 xmpp/irc 转发来的普通消息 event 为空，原 HANDLED_EVENTS 过滤误丢弃 → 空 event 且有文本视为聊天消息；抽出 isHandledEvent 纯函数 + MessageBridgeTest（59 测试全绿）
+- 2026-08-15: 远程部署排障：Docker Matterbridge 容器缺端口映射 + BindAddress 只绑容器回环 → 加 ports 映射 + BindAddress 改 0.0.0.0，MC→Matterbridge 双向互通

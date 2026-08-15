@@ -63,8 +63,10 @@ class MessageBridge(
     fun onServerTick() {
         while (true) {
             val msg = incomingQueue.poll() ?: break
-            // 只处理指定事件，忽略附件/系统等其他事件
-            if (msg.event !in HANDLED_EVENTS) continue
+            // 只处理聊天类事件，忽略附件/系统等其他事件。
+            // 注意：Matterbridge 从 xmpp/irc 等外部平台转发来的普通消息 event 为空/NULL，
+            // 不应被当作未知事件丢弃，而应视为聊天内容。
+            if (!isHandledEvent(msg)) continue
             // 过滤自己发出的消息回声（protocol=api 或 account 为 minecraft/api.*）
             if (isOwnEcho(msg)) continue
             // 防回环去重
@@ -90,7 +92,24 @@ class MessageBridge(
             msg.account?.startsWith("api.") == true
 
     companion object {
-        private val HANDLED_EVENTS = setOf("msg_create", "join", "leave")
+        private val CHAT_EVENTS = setOf("msg_create", "join", "leave")
+
+        /**
+         * 入站消息是否应被处理（可被当作聊天/事件展示）。
+         *
+         * - `msg_create` / `join` / `leave` 显式处理；
+         * - **event 为空/NULL 且文本非空** 视为普通聊天消息（Matterbridge 从 xmpp/irc
+         *   等外部桥转发来的消息 event 通常为空，仅 text/username 有效）；
+         * - 其他事件（如附件 attach_create、系统 api_connected 等）忽略。
+         */
+        internal fun isHandledEvent(msg: IncomingMessage): Boolean {
+            val event = msg.event
+            if (event.isNullOrBlank()) {
+                // 空 event：仅当有实际文本内容时才作为聊天消息展示
+                return !msg.text.isNullOrBlank()
+            }
+            return event in CHAT_EVENTS
+        }
     }
 
     private fun onStreamOpened() {
