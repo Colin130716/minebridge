@@ -15,6 +15,7 @@ import io.github.qsdwindows.minebridge.matterbridge.StreamListener
 import net.minecraft.server.MinecraftServer
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import java.util.UUID
 import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.atomic.AtomicBoolean
 
@@ -36,6 +37,9 @@ class MessageBridge(
     private var streamFailures = 0
     private var streamListener: StreamListener? = null
     private var poller: MessagePoller? = null
+
+    /** 每个玩家是否愿意接收 Minebridge 转发的入站消息（默认开启；key 为玩家 UUID）。 */
+    private val displayPrefs = DisplayPrefs()
 
     fun start() {
         if (!config.bridge.enabled) return
@@ -72,9 +76,19 @@ class MessageBridge(
             // 防回环去重
             if (deduplicator.isDuplicate(msg.gateway, msg.username, msg.text ?: "")) continue
             val component = MessageFormatter.format(msg, config.formatting)
-            server.playerList.players.forEach { it.sendSystemMessage(component) }
+            server.playerList.players.forEach { player ->
+                if (isDisplayEnabled(player.uuid)) {
+                    player.sendSystemMessage(component)
+                }
+            }
         }
     }
+
+    /** 设置某玩家是否接收入站消息显示。 */
+    fun setDisplayEnabled(uuid: UUID, enabled: Boolean) = displayPrefs.setEnabled(uuid, enabled)
+
+    /** 某玩家是否接收入站消息显示（默认开启）。 */
+    fun isDisplayEnabled(uuid: UUID): Boolean = displayPrefs.isEnabled(uuid)
 
     /** 发送侧：记录去重摘要后异步发送，失败时记录 warn 日志。 */
     fun send(message: OutgoingMessage) {

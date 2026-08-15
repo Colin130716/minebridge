@@ -22,20 +22,19 @@ Minecraft 服务器聊天与 Matterbridge 网关双向互通（可桥接 Discord
 
 ## 安装
 
-1. 将 `minebridge-1.0.1+1.21.11.jar` 放入 `mods/` 目录
+1. 将 `minebridge-1.0.2+1.21.11.jar` 放入 `mods/` 目录
 2. 启动服务器，首次启动自动生成 `config/minebridge.toml`
 3. 编辑 `config/minebridge.toml`，填写 Matterbridge 地址、token、网关名
 4. 保存后配置**自动热重载**，无需重启（也可用 `/minebridge reload` 手动触发）
 
 ## 命令
 
-| 命令 | 说明 |
-|------|------|
-| `/minebridge status` | 查看桥接状态（网关、地址、接收模式、失败次数） |
-| `/minebridge reload` | 手动热重载配置 |
-| `/minebridge send <text>` | 发送一条测试消息到网关 |
-
-所有命令需要管理员（op）权限。
+| 命令 | 权限 | 说明 |
+|------|------|------|
+| `/minebridge display [on\|off]` | 所有人 | 开启/关闭/切换该玩家接收 Minebridge 转发消息的显示（无参数时切换） |
+| `/minebridge status` | op | 查看桥接状态（网关、地址、接收模式、失败次数） |
+| `/minebridge reload` | op | 手动热重载配置 |
+| `/minebridge send <text>` | op | 发送一条测试消息到网关 |
 
 ## 配置
 
@@ -66,7 +65,7 @@ forwardLeave = true                     # 转发离开
 
 ```bash
 ./gradlew build
-# 产物: build/libs/minebridge-1.0.1+1.21.11.jar
+# 产物: build/libs/minebridge-1.0.2+1.21.11.jar
 ```
 
 ## 许可证

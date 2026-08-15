@@ -5,7 +5,7 @@
 ## 项目信息
 
 - 包根: `io.github.qsdwindows.minebridge`，mod id: `minebridge`
-- 版本: `1.0.1+1.21.11`，产物: `minebridge-1.0.1+1.21.11.jar`
+- 版本: `1.0.2+1.21.11`，产物: `minebridge-1.0.2+1.21.11.jar`
 - 许可证: LGPL-3.0
 - 构建: Gradle 9.6.1 + Fabric Loom 1.17.17 + Kotlin 2.4.10，Mojang 映射，Java 21 目标
 
@@ -14,8 +14,8 @@
 ```bash
 ./gradlew build          # 编译 + 测试 + 打包
 ./gradlew test           # 只跑单元测试
-# 产物: build/libs/minebridge-1.0.1+1.21.11.jar
-# 部署: cp build/libs/minebridge-1.0.1+1.21.11.jar /run/media/qsdwindows/Data/MC/.minecraft/versions/MinecraftFlightSimulator/mods/
+# 产物: build/libs/minebridge-1.0.2+1.21.11.jar
+# 部署: cp build/libs/minebridge-1.0.2+1.21.11.jar /run/media/qsdwindows/Data/MC/.minecraft/versions/MinecraftFlightSimulator/mods/
 ```
 
 ## 开发规范
@@ -46,3 +46,4 @@
 - 2026-08-15: 远程部署排障：Docker Matterbridge 容器缺端口映射 + BindAddress 只绑容器回环 → 加 ports 映射 + BindAddress 改 0.0.0.0，MC→Matterbridge 双向互通
 - 2026-08-15: 新增 /minebridge 命令（status/reload/send 子命令，op 权限，用 1.21.11 Permissions API）+ 配置热重载（ConfigWatcher 轮询 mtime + 重建 bridge，转发器持 AtomicReference 配置）+ ConfigWatcherTest（61 测试全绿）
 - 2026-08-15: 入站 join/leave 事件移除处理：Matterbridge 原生不向 api 转发 IRC/XMPP 的 join/leave，保留出站 PlayerJoinLeaveForwarder（MC 玩家进出 → 外部平台），入站仅处理 msg_create 与空 event 聊天消息
+- 2026-08-15: 新增 /minebridge display [on|off]（所有人无权限要求，默认 on；每玩家经 DisplayPrefs 控制是否显示入站转发消息；status/reload/send 权限下沉到子命令）+ DisplayPrefs + DisplayPrefsTest（64 测试全绿）

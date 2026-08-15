@@ -48,6 +48,8 @@ object MinebridgeMod : ModInitializer {
             status = { bridge?.status() },
             reload = { reloadFromCommand() },
             send = { sendTestMessage(it) },
+            isDisplayEnabled = { uuid -> bridge?.isDisplayEnabled(uuid) ?: true },
+            setDisplayEnabled = { uuid, enabled -> bridge?.setDisplayEnabled(uuid, enabled) },
         )
         MinebridgeCommand.register()
 

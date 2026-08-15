@@ -13,11 +13,13 @@ import net.minecraft.commands.CommandSourceStack
 import net.minecraft.commands.Commands
 import net.minecraft.network.chat.Component
 import net.minecraft.server.permissions.Permissions
+import java.util.UUID
 import java.util.function.Supplier
 
 /**
- * `/minebridge` 命令：status / reload / send。
- * 需要玩家 op 权限（level 2）。
+ * `/minebridge` 命令：status / reload / send / display。
+ * - status / reload / send：需要 op 权限（COMMANDS_MODERATOR）
+ * - display：所有玩家可用（控制是否显示 Minebridge 转发的入站消息）
  */
 object MinebridgeCommand {
 
@@ -30,42 +32,67 @@ object MinebridgeCommand {
     /** 发送一条测试消息到网关（同 Minebridge 玩家聊天格式）。 */
     private var sendAction: ((String) -> Unit)? = null
 
+    /** 查询某玩家是否显示入站消息。 */
+    private var isDisplayEnabled: ((UUID) -> Boolean)? = null
+
+    /** 设置某玩家是否显示入站消息。 */
+    private var setDisplayEnabled: ((UUID, Boolean) -> Unit)? = null
+
     /** 装配命令逻辑（由 MinebridgeMod 在 onInitialize 时调用，绑定回调）。 */
     fun setup(
         status: () -> BridgeStatus?,
         reload: () -> Boolean,
         send: (String) -> Unit,
+        isDisplayEnabled: (UUID) -> Boolean,
+        setDisplayEnabled: (UUID, Boolean) -> Unit,
     ) {
         statusProvider = status
         reloadAction = reload
         sendAction = send
+        this.isDisplayEnabled = isDisplayEnabled
+        this.setDisplayEnabled = setDisplayEnabled
     }
 
     fun register() {
         CommandRegistrationCallback.EVENT.register { dispatcher, _, _ ->
-            dispatcher.register(
-                Commands.literal("minebridge")
-                    .requires { it.permissions().hasPermission(Permissions.COMMANDS_MODERATOR) }
-                    .executes { ctx ->
-                        sendFeedback(ctx, "Minebridge: 使用 /minebridge <status|reload|send <text>>")
-                        Command.SINGLE_SUCCESS
-                    }
-                    .then(
-                        Commands.literal("status")
-                            .executes { ctx -> executeStatus(ctx) }
-                    )
-                    .then(
-                        Commands.literal("reload")
-                            .executes { ctx -> executeReload(ctx) }
-                    )
-                    .then(
-                        Commands.literal("send")
-                            .then(
-                                Commands.argument("text", StringArgumentType.greedyString())
-                                    .executes { ctx -> executeSend(ctx) }
-                            )
-                    )
-            )
+            val root = Commands.literal("minebridge")
+                .executes { ctx ->
+                    sendFeedback(ctx, "Minebridge: 使用 /minebridge <status|reload|send <text>|display [on|off]>")
+                    Command.SINGLE_SUCCESS
+                }
+                // 需要 op 权限的子命令，逐个 requires（根命令对所有人可见）
+                .then(
+                    Commands.literal("status")
+                        .requires { it.permissions().hasPermission(Permissions.COMMANDS_MODERATOR) }
+                        .executes { ctx -> executeStatus(ctx) }
+                )
+                .then(
+                    Commands.literal("reload")
+                        .requires { it.permissions().hasPermission(Permissions.COMMANDS_MODERATOR) }
+                        .executes { ctx -> executeReload(ctx) }
+                )
+                .then(
+                    Commands.literal("send")
+                        .requires { it.permissions().hasPermission(Permissions.COMMANDS_MODERATOR) }
+                        .then(
+                            Commands.argument("text", StringArgumentType.greedyString())
+                                .executes { ctx -> executeSend(ctx) }
+                        )
+                )
+                // display：所有玩家可用
+                .then(
+                    Commands.literal("display")
+                        .executes { ctx -> executeDisplayToggle(ctx) }
+                        .then(
+                            Commands.literal("on")
+                                .executes { ctx -> executeDisplaySet(ctx, true) }
+                        )
+                        .then(
+                            Commands.literal("off")
+                                .executes { ctx -> executeDisplaySet(ctx, false) }
+                        )
+                )
+            dispatcher.register(root)
         }
     }
 
@@ -99,6 +126,28 @@ object MinebridgeCommand {
         }
         action(text)
         sendFeedback(ctx, "Minebridge: 测试消息已发送")
+        return Command.SINGLE_SUCCESS
+    }
+
+    private fun executeDisplayToggle(ctx: CommandContext<CommandSourceStack>): Int {
+        val player = ctx.source.player ?: run {
+            sendFeedback(ctx, "Minebridge: 该命令仅玩家可用")
+            return Command.SINGLE_SUCCESS
+        }
+        val current = isDisplayEnabled?.invoke(player.uuid) ?: true
+        val next = !current
+        setDisplayEnabled?.invoke(player.uuid, next)
+        sendFeedback(ctx, "Minebridge: 已${if (next) "开启" else "关闭"}转发消息显示")
+        return Command.SINGLE_SUCCESS
+    }
+
+    private fun executeDisplaySet(ctx: CommandContext<CommandSourceStack>, enabled: Boolean): Int {
+        val player = ctx.source.player ?: run {
+            sendFeedback(ctx, "Minebridge: 该命令仅玩家可用")
+            return Command.SINGLE_SUCCESS
+        }
+        setDisplayEnabled?.invoke(player.uuid, enabled)
+        sendFeedback(ctx, "Minebridge: 已${if (enabled) "开启" else "关闭"}转发消息显示")
         return Command.SINGLE_SUCCESS
     }
 
